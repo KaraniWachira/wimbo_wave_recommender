@@ -1,0 +1,113 @@
+---
+title: "wimbo wave music recommender"
+author: "karani"
+format: html
+editor: visual
+---
+
+Import the packages to use
+
+```{r}
+library(tidyverse)
+```
+
+import the data set from tidy Tuesday github page
+
+```{r}
+polls <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-14/polls.csv')
+
+rankings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-14/rankings.csv')
+
+# view the data
+View(polls)
+```
+
+```{r}
+#View the data
+View(rankings)
+```
+
+Basic EDA
+
+```{r}
+# to view waht song was on the participiating critics top lists
+polls %>% 
+  count(title, sort = TRUE)
+```
+
+curious to know was there a golden age of rap according to our data?
+
+```{r}
+polls %>% 
+  count(year) %>% 
+  mutate(decade = floor(year / 10) * 10) %>%
+  mutate(decade = as.factor(decade)) %>% 
+  ggplot(aes(x = year, y = n, fill = decade)) + geom_col()
+```
+
+aggregated decade summary by decade
+
+```{r}
+polls %>% 
+  count(year) %>% 
+  mutate(decade = floor(year / 10) * 10) %>%
+  mutate(decade = as.factor(decade)) %>% 
+  ggplot(aes(x = decade, y = n, fill = decade)) + geom_col()
+
+# we observe that the 90s are the golden days of rap
+```
+
+let us count who is the most famous artist from the polls data
+
+```{r}
+polls %>% 
+  count(artist, sort = TRUE) %>% 
+  ggplot(aes(x = n)) + geom_density()
+
+```
+
+sum of the songs artist appear: remove featuring aspect of an artist in a song
+
+```{r}
+rankings %>% 
+  select(artist, n, n1, n2, n3, n4, n5) %>% 
+  group_by(artist) %>% 
+  summarise_all(sum) %>% 
+  filter(!str_detect(artist, "ft.")) %>% 
+  ggplot(aes(x = n1, y = n5 )) +
+  geom_jitter()
+```
+
+artists with the top rank 1 songs (n1)
+
+```{r}
+rankings %>% 
+  select(artist, n, n1, n2, n3, n4, n5) %>% 
+  group_by(artist) %>% 
+  summarise_all(sum) %>% 
+  filter(!str_detect(artist, "ft.")) %>% 
+  arrange(desc(n1)) %>% 
+  slice(1:5)
+```
+
+```{r}
+rankings %>% 
+  select(artist, n, n1, n2, n3, n4, n5) %>% 
+  group_by(artist) %>% 
+  summarise_all(sum) %>% 
+  filter(!str_detect(artist, "ft.")) %>% 
+  arrange(desc(n5)) %>% 
+  slice(1:5) 
+```
+
+15% of the top songs were voted by a single country. does that allude to a country bias by the critics?
+
+```{r}
+polls %>% 
+  count(title, critic_country, name = "song_nom") %>% 
+  add_count(title, name = "number_of_countries") %>% 
+  filter(number_of_countries == 1, critic_country != "us") %>% 
+  nrow() / nrow(polls)
+  
+  
+```
